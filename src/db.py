@@ -2,13 +2,10 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-#  association tables here
-association_table_sender = db.Table(
-  "sender_association",
-  db.Column("event_id", db.Integer, db.ForeignKey("event.id")),
-  db.Column("sender_id", db.Integer, db.ForeignKey("user.id"))
-)
+#Sender to Event: one-to-many
+#Receiver to Event: many-to-many
 
+#  association tables here
 association_table_receiver = db.Table(
   "receiver_association",
   db.Column("event_id", db.Integer, db.ForeignKey("event.id")),
@@ -22,11 +19,11 @@ class Event(db.Model):
   Event model
   """
   __tablename__ = "event"
-  id = db.Column(db.Integer, primary_key = True, autoincrement=True) #do we need this?
+  id = db.Column(db.Integer, primary_key = True, autoincrement=True) 
   name = db.Column(db.String, nullable = False) #title of event
   start_time = db.Column(db.Time, nullable=False) 
   end_time = db.Column(db.Time, nullable=False)
-  sender_id = db.relationship("User", secondary = association_table_sender, back_populates = "events_accepted")
+  sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
   receiver_id = db.relationship("User", secondary = association_table_receiver, back_populates = "events_pending")
   message = db.Column(db.String, nullable = True) #description of event, can be left empty
   accepted = db.Column(db.Bool, nullable = False)
@@ -48,10 +45,11 @@ class User(db.Model):
   """
   User Model
   """
+  __tablename__ = "user"
   id = db.Column(db.Integer, primary_key = True, autoincrement=True)
   username = db.Column(db.String, nullable = False) #the usernames won't be unique, but we will just go based off of ids
   password = db.Column(db.String, nullable = False)
-  events_accepted = db.relationship("Event", secondary = association_table_sender, back_populates = "sender_id", cascade ="delete") #if user gets deleted, then events accepted and pending should get deleted too
+  events_accepted = db.relationship("Event", cascade ="delete") #if user gets deleted, then events accepted and pending should get deleted too
   events_pending = db.relationship("Event", secondary = association_table_receiver, back_populates = "receiver_id", cascade = "delete")
 
   def __init__(self, **kwargs):
@@ -72,9 +70,6 @@ class User(db.Model):
     Returns all events that are pending associated with this user
     """
     pass
-
-  
-
 
 
 
