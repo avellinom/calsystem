@@ -2,14 +2,17 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-#Sender to Event: one-to-many
-#Receiver to Event: many-to-many
+"""
+Overview of Data Structuring:
+* Sender <-> Event is one-to-many
+* Receiver <-> Event is many-to-many
+"""
 
-#  association tables here
+# association tables here
 association_table_receiver = db.Table(
-  "receiver_association",
-  db.Column("event_id", db.Integer, db.ForeignKey("event.id")),
-  db.Column("receiver_id", db.Integer, db.ForeignKey("user.id"))
+    "receiver_association",
+    db.Column("event_id", db.Integer, db.ForeignKey("event.id")),
+    db.Column("receiver_id", db.Integer, db.ForeignKey("user.id"))
 )
 
 
@@ -19,38 +22,46 @@ class Event(db.Model):
   Event model
   """
   __tablename__ = "event"
-  id = db.Column(db.Integer, primary_key = True, autoincrement=True) 
-  name = db.Column(db.String, nullable = False) #title of event
-  start_time = db.Column(db.Time, nullable=False) 
+  id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+  name = db.Column(db.String, nullable=False)  # title of event
+  start_time = db.Column(db.Time, nullable=False)
   end_time = db.Column(db.Time, nullable=False)
   sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-  receiver_id = db.relationship("User", secondary = association_table_receiver, back_populates = "events_pending")
-  message = db.Column(db.String, nullable = True) #description of event, can be left empty
-  accepted = db.Column(db.Bool, nullable = False)
+  receiver_id = db.relationship(
+      "User", secondary=association_table_receiver, back_populates="events_pending")
+  # description of event, can be left empty
+  message = db.Column(db.String, nullable=True)
+  accepted = db.Column(db.Bool, nullable=False)
 
   def __init__(self, **kwargs):
     """
     Initializes an event object
     """
     self.name = kwargs.get("name", "Event Request")
-    self.start_time = kwargs.get("start_time") #What would be the best way for the client to put in times? if start and end time are left empty returns an error
+    # What would be the best way for the client to put in times? if start and end time are left empty returns an error
+    self.start_time = kwargs.get("start_time")
     self.end_time = kwargs.get("end_time")
-    self.sender_id = kwargs.get("sender_id") #should also return error if no receiver_id specified
-    self.receiver_id = kwargs.get("receiver_id") #should also return error if no receiver_id specified
-    self.message = kwargs.get("message") 
+    # should also return error if no receiver_id specified
+    self.sender_id = kwargs.get("sender_id")
+    # should also return error if no receiver_id specified
+    self.receiver_id = kwargs.get("receiver_id")
+    self.message = kwargs.get("message")
     self.accepted = kwargs.get("accepted")
-  
+
 
 class User(db.Model):
   """
   User Model
   """
   __tablename__ = "user"
-  id = db.Column(db.Integer, primary_key = True, autoincrement=True)
-  username = db.Column(db.String, nullable = False) #the usernames won't be unique, but we will just go based off of ids
-  password = db.Column(db.String, nullable = False)
-  events_accepted = db.relationship("Event", cascade ="delete") #if user gets deleted, then events accepted and pending should get deleted too
-  events_pending = db.relationship("Event", secondary = association_table_receiver, back_populates = "receiver_id", cascade = "delete")
+  id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+  # the usernames won't be unique, but we will just go based off of ids
+  username = db.Column(db.String, nullable=False)
+  password = db.Column(db.String, nullable=False)
+  # if user gets deleted, then events accepted and pending should get deleted too
+  events_accepted = db.relationship("Event", cascade="delete")
+  events_pending = db.relationship(
+      "Event", secondary=association_table_receiver, back_populates="receiver_id", cascade="delete")
 
   def __init__(self, **kwargs):
     """
@@ -72,21 +83,19 @@ class User(db.Model):
     pass
 
 
+# Questions:
+# Do we want the user to give a day and then we tell them the events of that day?
+# What would be the best way so that only the person with that username can accept that event request?
+# How can we organize all the events?
+# Do we still need the serialize functions if we are going to be using DockerHub, Google Cloud?
 
+# Considerations:
+# do not want the times to conflict for events
 
-#Questions: 
-#Do we want the user to give a day and then we tell them the events of that day?
-#What would be the best way so that only the person with that username can accept that event request?
-#How can we organize all the events?
-#Do we still need the serialize functions if we are going to be using DockerHub, Google Cloud?
-
-#Considerations:
-#do not want the times to conflict for events
-
-#Possible Additions:
-#-Adding different calendars for a user (personal, work, etc)
-#Calendar Table
-#can have different calendars for a user
+# Possible Additions:
+# -Adding different calendars for a user (personal, work, etc)
+# Calendar Table
+# can have different calendars for a user
 
 # class Calendar(db.Model):
 #   """
@@ -96,4 +105,3 @@ class User(db.Model):
 #   id = db.Column(db.Integer, primary_key = True, autoincrement = True)
 #   name = db.Column(db.String, nullable = False)
 #   events = db.Relationship()
-
