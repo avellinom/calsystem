@@ -6,6 +6,9 @@ import os
 from dotenv import load_dotenv
 load_dotenv()  # for use with environment variables
 
+from db import User
+from db import Event
+
 app = Flask(__name__)
 db_filename = "cal.db"
 
@@ -38,6 +41,16 @@ def hello_world():
     Test route
     """
     return success_response("Hello World!")
+
+@app.route("/api/users/")
+def get_users():
+    """
+    Endpoint for getting all users
+    """
+    users = [user.serialize() for user in User.query.all()]
+    return success_response({"users": users})
+
+
 
 
 if __name__ == "__main__":

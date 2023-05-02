@@ -31,7 +31,7 @@ class Event(db.Model):
       "User", secondary=association_table_receiver, back_populates="events_pending")
   # description of event, can be left empty
   message = db.Column(db.String, nullable=True)
-  accepted = db.Column(db.Bool, nullable=False)
+  accepted = db.Column(db.Boolean, nullable=False)
 
   def __init__(self, **kwargs):
     """
@@ -47,6 +47,18 @@ class Event(db.Model):
     self.receiver_id = kwargs.get("receiver_id")
     self.message = kwargs.get("message")
     self.accepted = kwargs.get("accepted")
+
+  def serialize(self):
+    """
+    Serializes an Event object
+    """
+    return {"id": self.id, "name": self.name, "start_time": self.start_time, 
+            "end_time": self.end_time, "sender_id": self.sender_id, 
+            "receiver_id": self.receiver_id, "message": self.message, 
+            "accepted": self.accepted }
+
+
+
 
 
 class User(db.Model):
@@ -70,17 +82,13 @@ class User(db.Model):
     self.username = kwargs.get("username", "")
     self.password = kwargs.get("password", "")
 
-  def get_events_accepted(self):
+  def serialize(self):
     """
-    Returns all events that have been accepted associated with this user
+    Serializes a User object
     """
-    pass
+    return {"id": self.id, "username": self.name, "password": self.password, "events_accepted":[e.serialize() for e in self.events_accepted], "events_pending":[e.serialize() for e in self.events_pending]}
 
-  def get_events_pending(self):
-    """
-    Returns all events that are pending associated with this user
-    """
-    pass
+ 
 
 
 # Questions:
