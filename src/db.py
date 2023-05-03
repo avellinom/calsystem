@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime 
 
 db = SQLAlchemy()
 
@@ -12,7 +13,7 @@ Overview of Data Structuring:
 association_table_receiver = db.Table(
     "receiver_association",
     db.Column("event_id", db.Integer, db.ForeignKey("event.id")),
-    db.Column("receiver_id", db.Integer, db.ForeignKey("user.id"))
+    db.Column("receivers", db.Integer, db.ForeignKey("user.id"))
 )
 
 
@@ -24,12 +25,11 @@ class Event(db.Model):
   __tablename__ = "event"
   id = db.Column(db.Integer, primary_key=True, autoincrement=True)
   name = db.Column(db.String, nullable=False)  # title of event
-  start_time = db.Column(db.Time, nullable=False)
-  end_time = db.Column(db.Time, nullable=False)
+  start_time = db.Column(db.DateTime, nullable=False)
+  end_time = db.Column(db.DateTime, nullable=False)
   sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-  receiver_id = db.relationship(
+  receivers = db.relationship(
       "User", secondary=association_table_receiver, back_populates="events_pending")
-  # description of event, can be left empty
   message = db.Column(db.String, nullable=True)
   accepted = db.Column(db.Boolean, nullable=False)
 
@@ -44,7 +44,7 @@ class Event(db.Model):
     # should also return error if no receiver_id specified
     self.sender_id = kwargs.get("sender_id")
     # should also return error if no receiver_id specified
-    self.receiver_id = kwargs.get("receiver_id")
+    self.receivers = kwargs.get("receivers", "")
     self.message = kwargs.get("message")
     self.accepted = kwargs.get("accepted")
 
@@ -54,11 +54,8 @@ class Event(db.Model):
     """
     return {"id": self.id, "name": self.name, "start_time": self.start_time, 
             "end_time": self.end_time, "sender_id": self.sender_id, 
-            "receiver_id": self.receiver_id, "message": self.message, 
+            "receivers": [r.simple_serialize() for r in self.receivers], "message": self.message, 
             "accepted": self.accepted }
-
-
-
 
 
 class User(db.Model):
@@ -73,7 +70,7 @@ class User(db.Model):
   # if user gets deleted, then events accepted and pending should get deleted too
   events_accepted = db.relationship("Event", cascade="delete")
   events_pending = db.relationship(
-      "Event", secondary=association_table_receiver, back_populates="receiver_id", cascade="delete")
+      "Event", secondary=association_table_receiver, back_populates="receivers", cascade="delete")
 
   def __init__(self, **kwargs):
     """
@@ -86,8 +83,14 @@ class User(db.Model):
     """
     Serializes a User object
     """
-    return {"id": self.id, "username": self.name, "password": self.password, "events_accepted":[e.serialize() for e in self.events_accepted], "events_pending":[e.serialize() for e in self.events_pending]}
+    return {"id": self.id, "username": self.username, "password": self.password, "events_accepted":[e.serialize() for e in self.events_accepted], "events_pending":[e.serialize() for e in self.events_pending]}
+  #Should we be serializing the password?
 
+  def simple_serialize(self):
+    """
+    Simple serializes a user object
+    """
+    return {"id": self.id, "username": self.username}
  
 
 
@@ -104,6 +107,7 @@ class User(db.Model):
 # -Adding different calendars for a user (personal, work, etc)
 # Calendar Table
 # can have different calendars for a user
+
 
 # class Calendar(db.Model):
 #   """
