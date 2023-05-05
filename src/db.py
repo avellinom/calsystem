@@ -54,7 +54,7 @@ class Event(db.Model):
             "start_time": self.start_time,
             "end_time": self.end_time,
             "sender_email": self.sender_email,
-            "receiver_emails": [r.simple_serialize() for r in self.receiver_emails]}
+            "receiver_emails": [r.get_email() for r in self.receiver_emails]}
 
 
 class User(db.Model):
