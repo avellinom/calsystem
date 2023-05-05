@@ -30,7 +30,7 @@ class Event(db.Model):
   start_time = db.Column(db.DateTime, nullable=False)
   end_time = db.Column(db.DateTime, nullable=False)
   sender_email = db.Column(
-      db.Integer, db.ForeignKey("user.email"), nullable=False)
+      db.String, db.ForeignKey("user.email"), nullable=False)
   receiver_emails = db.relationship(
       "User", secondary=association_table_receiver, back_populates="events_received")
 
@@ -83,7 +83,7 @@ class User(db.Model):
       both_events.append(c)
     for i in self.events_received:
       both_events.append(i)
-    return (both_events)
+    return both_events
 
   def serialize(self):
     """
@@ -91,11 +91,11 @@ class User(db.Model):
     """
     return {"email": self.email, "events": [e.serialize() for e in self.get_both_events()]}
 
-  def simple_serialize(self):
+  def simple_serialize(self) -> str:
     """
     Simple serializes a user object
     """
-    return {"email": self.email}
+    return self.email
 
 
 # Questions:

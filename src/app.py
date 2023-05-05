@@ -74,7 +74,7 @@ def get_user(user_email):
   """
   Endpoint for getting a user by email
   """
-  user = User.query.filter_by(email = user_email).first()
+  user = User.query.filter_by(email=user_email).first()
   if user is None:
     return failure_response(("User not found"), 404)
   return success_response(user.serialize())
@@ -82,7 +82,7 @@ def get_user(user_email):
 
 @app.route("/api/users/<string:user_email>/", methods=["DELETE"])
 def delete_user(user_email):
-  user = User.query.filter_by(email = user_email).first()
+  user = User.query.filter_by(email=user_email).first()
   if user is None:
     return failure_response(("User not found"), 404)
   db.session.delete(user)
@@ -109,7 +109,7 @@ def create_event(user_email):
   end_time_hour = body.get("end_time_hour")
   end_time_minute = body.get("end_time_minute")
   receiver_emails = body.get("receiver_emails")
-  if name is None or start_time_year is None or start_time_month is None \
+  if name is None or color is None or start_time_year is None or start_time_month is None \
           or start_time_day is None or start_time_hour is None \
           or start_time_minute is None or end_time_year is None \
           or end_time_month is None or end_time_day is None \
@@ -134,10 +134,11 @@ def create_event(user_email):
   new_event = Event(name=name, color=color,
                     start_time=start_time, end_time=end_time, sender_email=user_email)
   db.session.add(new_event)
-  for receiver_email in receiver_emails:
-    new_event.receiver_emails.append(receiver_email)
+  for receiver in receivers:
+    new_event.receiver_emails.append(receiver)
   db.session.commit()
   return success_response(new_event.serialize(), 201)
+
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=8000, debug=True)
