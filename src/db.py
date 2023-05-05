@@ -46,7 +46,7 @@ class Event(db.Model):
     # should also return error if no receiver_id specified
     self.sender_email = kwargs.get("sender_email")
     # should also return error if no receiver_id specified
-    self.receiver_emails = kwargs.get("receiver_emailss", "")
+    self.receiver_emails = kwargs.get("receiver_emails", "")
 
   def serialize(self):
     """
@@ -68,7 +68,7 @@ class User(db.Model):
   # if user gets deleted, then events accepted and pending should get deleted too
   events_sent = db.relationship("Event", cascade="delete")
   events_received = db.relationship(
-      "Event", secondary=association_table_receiver, back_populates="receivers", cascade="delete")
+      "Event", secondary=association_table_receiver, back_populates="receiver_emails", cascade="delete")
 
   def __init__(self, **kwargs):
     """
@@ -91,7 +91,7 @@ class User(db.Model):
     """
     Serializes a User object
     """
-    return {"email": self.email, "events": [e.serialize() for e in self.get_both_events]}
+    return {"email": self.email, "events": [e.serialize() for e in self.get_both_events()]}
 
   def simple_serialize(self):
     """

@@ -72,17 +72,22 @@ def create_user():
 @app.route("/api/users/<string:user_email>/")
 def get_user(user_email):
   """
-  Endpoint for getting a user
+  Endpoint for getting a user by email
   """
-  # user = db.get_user_by_email(user_email)
-  # return success_response(user.serialize())
+  user = User.query.filter_by(email = user_email).first()
+  if user is None:
+    return failure_response(("User not found"), 404)
+  return success_response(user.serialize())
 
 
 @app.route("/api/users/<string:user_email>/", methods=["DELETE"])
 def delete_user(user_email):
-  # user = db.get_user_by_email()
-  # db.delete_user_by_email()
-  # user.serialize()
+  user = User.query.filter_by(email = user_email).first()
+  if user is None:
+    return failure_response(("User not found"), 404)
+  db.session.delete(user)
+  db.session.commit()
+  return success_response(user.serialize())
 
 
 @app.route("/api/<string:user_email>/events/", methods=["POST"])
@@ -130,7 +135,6 @@ def create_event(user_email):
 #   db.session.add(new_event)
 #   db.session.commit()
 #   return success_response(new_event.serialize(), 201)
-
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=8000, debug=True)
