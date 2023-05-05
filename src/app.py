@@ -143,5 +143,23 @@ def create_event(user_email):
   return success_response(new_event.serialize(), 201)
 
 
+@app.route("/api/events/<int:event_id>/")
+def get_event(event_id):
+  event = Event.query.filter_by(id=event_id).first()
+  if event is None:
+    return failure_response(("Event not found"), 404)
+  return success_response(event.serialize())
+
+@app.route("/api/events/<int:event_id>/", methods = ["DELETE"])
+def delete_event(event_id):
+  event = Event.query.filter_by(id=event_id).first()
+  if event is None:
+    return failure_response(("Event not found"), 404)
+  db.session.delete(event)
+  db.session.commit()
+  return success_response(event.serialize())
+
+  
+
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=8000, debug=True)
