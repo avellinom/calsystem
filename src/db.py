@@ -45,8 +45,6 @@ class Event(db.Model):
     self.end_time = kwargs.get("end_time")
     # should also return error if no receiver_id specified
     self.sender_email = kwargs.get("sender_email")
-    # should also return error if no receiver_id specified
-    self.receiver_emails = kwargs.get("receiver_emailss", "")
 
   def serialize(self):
     """

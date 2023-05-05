@@ -83,6 +83,7 @@ def delete_user(user_email):
   # user = db.get_user_by_email()
   # db.delete_user_by_email()
   # user.serialize()
+  return 0
 
 
 @app.route("/api/<string:user_email>/events/", methods=["POST"])
@@ -92,6 +93,7 @@ def create_event(user_email):
   """
   body = json.loads(request.data)
   name = body.get("name")
+  color = body.get("color")
   start_time_year = body.get("start_time_year")
   start_time_month = body.get("start_time_month")
   start_time_day = body.get("start_time_day")
@@ -103,33 +105,35 @@ def create_event(user_email):
   end_time_hour = body.get("end_time_hour")
   end_time_minute = body.get("end_time_minute")
   receiver_emails = body.get("receiver_emails")
+  if name is None or start_time_year is None or start_time_month is None \
+          or start_time_day is None or start_time_hour is None \
+          or start_time_minute is None or end_time_year is None \
+          or end_time_month is None or end_time_day is None \
+          or end_time_hour is None or end_time_minute is None \
+          or receiver_emails is None:
+    return failure_response("Missing fields.")
 
   sender = User.query.filter_by(email=user_email).first()
+  receivers = [User.query.filter_by(email=receiver_email).first()
+               for receiver_email in receiver_emails]
+  if sender is None:
+    return failure_response("Sender does not exist.")
+  for receiver in receivers:
+    if receiver is None:
+      return failure_response("One or more receivers do not exist.")
 
+  start_time = datetime(start_time_year, start_time_month,
+                        start_time_day, start_time_hour, start_time_minute, 0)
+  end_time = datetime(end_time_year, end_time_month,
+                      end_time_day, end_time_hour, end_time_minute, 0)
 
-#   sender = User.query.filter_by(id=sender_id).first()
-#   receivers = []
-#   for id in receiver_ids:
-#     receivers.append(User.query.filter_by(id=id).first())
-
-#   if receivers is None or sender is None:
-#     return failure_response("Invalid receiver_id. Please try again!")
-
-#   start_time = datetime(start_time_year, start_time_month,
-#                         start_time_day, start_time_hour, start_time_minute, 0)
-#   end_time = datetime(end_time_year, end_time_month,
-#                       end_time_day, end_time_hour, end_time_minute, 0)
-#   # if sender_id = receiver_id: accepted = true
-
-#   if name is None or start_time is None or end_time is None:
-#     return failure_response("You are missing a field. Please try again!")
-
-#   new_event = Event(name=name, start_time=start_time, end_time=end_time,
-#                     sender_id=sender_id, receivers=receivers,
-#                     message=message, accepted=False)
-#   db.session.add(new_event)
-#   db.session.commit()
-#   return success_response(new_event.serialize(), 201)
+  new_event = Event(name=name, color=color,
+                    start_time=start_time, end_time=end_time, sender_email=user_email)
+  db.session.add(new_event)
+  for receiver_email in receiver_emails:
+    new_event.receiver_emails.append(receiver_email)
+  db.session.commit()
+  return success_response(new_event.serialize(), 201)
 
 
 if __name__ == "__main__":
