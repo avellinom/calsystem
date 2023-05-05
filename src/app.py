@@ -61,6 +61,9 @@ def create_user():
   """
   body = json.loads(request.data)
   email = body.get("email")
+  existing_user = User.query.filter_by(email=email).first()
+  if existing_user is not None:
+    return failure_response("User already exists", 400)
   if email is None:
     return failure_response("Missing email field.")
   new_user = User(email=email)  # start with no events
