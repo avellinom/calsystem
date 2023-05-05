@@ -45,6 +45,17 @@ def hello_world():
   return success_response("Hello World!")
 
 
+@app.route("/api/<string:user_email>/events/")
+def get_outgoing_events(user_email):
+  """
+  Endpoint for getting all the events of which the user is a sender
+  """
+  user = User.query.filter_by(email=user_email).first()
+  if user is None:
+    return failure_response("User not found.")
+  return success_response(user.get_sent_events())
+
+
 @app.route("/api/users/")
 def get_users():
   """
@@ -150,7 +161,8 @@ def get_event(event_id):
     return failure_response(("Event not found"), 404)
   return success_response(event.serialize())
 
-@app.route("/api/events/<int:event_id>/", methods = ["DELETE"])
+
+@app.route("/api/events/<int:event_id>/", methods=["DELETE"])
 def delete_event(event_id):
   event = Event.query.filter_by(id=event_id).first()
   if event is None:
@@ -159,7 +171,6 @@ def delete_event(event_id):
   db.session.commit()
   return success_response(event.serialize())
 
-  
 
 if __name__ == "__main__":
   app.run(host="0.0.0.0", port=8000, debug=True)

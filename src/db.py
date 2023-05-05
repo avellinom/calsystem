@@ -50,7 +50,7 @@ class Event(db.Model):
     """
     Serializes an Event object
     """
-    return {"id": self.id, "name": self.name,
+    return {"id": self.id, "name": self.name, "color": self.color,
             "start_time": self.start_time,
             "end_time": self.end_time,
             "sender_email": self.sender_email,
@@ -90,6 +90,12 @@ class User(db.Model):
     Serializes a User object
     """
     return {"email": self.email, "events": [e.serialize() for e in self.get_both_events()]}
+
+  def get_sent_events(self):
+    """
+    Get all the events the user has sent
+    """
+    return {"events": [e.serialize() for e in self.events_sent]}
 
   def get_email(self):
     """
