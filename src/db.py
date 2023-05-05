@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime 
+from datetime import datetime
 
 db = SQLAlchemy()
 
@@ -17,6 +17,8 @@ association_table_receiver = db.Table(
 )
 
 # classes for tables here
+
+
 class Event(db.Model):
   """
   Event model
@@ -24,10 +26,11 @@ class Event(db.Model):
   __tablename__ = "event"
   id = db.Column(db.Integer, primary_key=True, autoincrement=True)
   name = db.Column(db.String, nullable=False)  # title of event
-  color = db.Column(db.String, nullable = False)
+  color = db.Column(db.String, nullable=False)
   start_time = db.Column(db.DateTime, nullable=False)
   end_time = db.Column(db.DateTime, nullable=False)
-  sender_email = db.Column(db.Integer, db.ForeignKey("user.email"), nullable=False)
+  sender_email = db.Column(
+      db.Integer, db.ForeignKey("user.email"), nullable=False)
   receiver_emails = db.relationship(
       "User", secondary=association_table_receiver, back_populates="events_received")
 
@@ -49,10 +52,10 @@ class Event(db.Model):
     """
     Serializes an Event object
     """
-    return {"id": self.id, "name": self.name, 
-            "start_time": self.start_time, 
-            "end_time": self.end_time, 
-            "sender_email": self.sender_email, 
+    return {"id": self.id, "name": self.name,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+            "sender_email": self.sender_email,
             "receiver_emails": [r.simple_serialize() for r in self.receiver_emails]}
 
 
@@ -61,7 +64,7 @@ class User(db.Model):
   User Model
   """
   __tablename__ = "user"
-  email = db.Column(db.String, nullable=False, primary_key = True)
+  email = db.Column(db.String, nullable=False, primary_key=True)
   # if user gets deleted, then events accepted and pending should get deleted too
   events_sent = db.relationship("Event", cascade="delete")
   events_received = db.relationship(
@@ -88,15 +91,13 @@ class User(db.Model):
     """
     Serializes a User object
     """
-    return {"email": self.email, "events":[e.serialize() for e in self.get_both_events]}
-
+    return {"email": self.email, "events": [e.serialize() for e in self.get_both_events]}
 
   def simple_serialize(self):
     """
     Simple serializes a user object
     """
     return {"email": self.email}
- 
 
 
 # Questions:
