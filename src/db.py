@@ -91,7 +91,7 @@ class User(db.Model):
     """
     return {"email": self.email, "events": [e.serialize() for e in self.get_both_events()]}
 
-  def simple_serialize(self) -> str:
+  def get_email(self):
     """
     Simple serializes a user object
     """
