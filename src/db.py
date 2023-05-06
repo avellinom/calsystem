@@ -1,7 +1,23 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+import base64
+import boto3
+import io
+from io import BytesIO
+from mimetypes import guess_extension, guess_type
+import os
+from PIL import Image
+import random
+import re
+import string
 
 db = SQLAlchemy()
+
+# AWS constants
+EXTENSIONS = ["png", "gif", "jpg", "jpeg"]
+BASE_DIR = os.getcwd()
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
+S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.us-east-1.amazonaws.com"
 
 """
 Overview of Data Structuring:
@@ -17,6 +33,96 @@ association_table_receiver = db.Table(
 )
 
 # classes for tables here
+
+
+class Asset(db.Model):
+  """
+  Asset model for calendar image
+  """
+  __tablename__ = "assets"
+  id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+  base_url = db.Column(db.String, nullable=True)
+  salt = db.Column(db.String, nullable=False)
+  extension = db.Column(db.String, nullable=False)
+  width = db.Column(db.Integer, nullable=False)
+  height = db.Column(db.Integer, nullable=False)
+
+  def __init__(self, **kwargs):
+    """
+    Initializes an asset object
+    """
+    self.create(kwargs.get("image_data"))
+
+  def create(self, image_data):
+    """
+    For a base64 image:
+      1. Rejects if it's bad filetype
+      2. Generates a random string for the image filename
+      3. Decode the image and attempt to upload to AWS
+    """
+    try:
+      ext = guess_extension(guess_type(image_data)[0])[1:]
+
+      # Only accept support file extensions
+      if ext not in EXTENSIONS:
+        raise Exception(f"Extension {ext} not supported")
+
+      # Generate random string
+      salt = "".join(
+          random.SystemRandom().choice(
+              string.ascii_uppercase + string.digits
+          )
+          for _ in range(16)
+      )
+
+      # Decode the image
+      # a) remove base64 header
+      img_str = re.sub("^data:image/.+;base64,", "", image_data)
+      img_data = base64.b64decode(img_str)
+      img = Image.open(BytesIO(img_data))
+
+      self.base_url = S3_BASE_URL
+      self.salt = salt
+      self.extension = ext
+      self.width = img.width
+      self.height = img.height
+
+      img_filename = f"{self.salt}.{self.extension}"
+      self.upload(img, img_filename)
+    except Exception as e:
+      print(f"Error while creating image: {e}")
+
+  def serialize(self):
+    """
+    Serializes an asset object
+    """
+    return {
+        "url": f"{self.base_url}/{self.salt}.{self.extension}"
+    }
+
+  def upload(self, img, img_filename):
+    """
+    Upload image via AWS
+    """
+    try:
+      # save img temporarily on server
+      img_temploc = f"{BASE_DIR}/{img_filename}"
+      img.save(img_temploc)
+
+      # upload image to S3
+      s3_client = boto3.client("s3")
+      s3_client.upload_file(img_temploc, S3_BUCKET_NAME, img_filename)
+
+      # make s3 accesspublic
+      s3_resource = boto3.resource("s3")
+      object_acl = s3_resource.ObjectAcl(S3_BUCKET_NAME, img_filename)
+      object_acl.put(ACL="public-read")
+
+      # remove image from server
+      os.remove(img_temploc)
+
+    except Exception as e:
+      print(f"Error while uploading image: {e}")
 
 
 class Event(db.Model):
@@ -102,28 +208,3 @@ class User(db.Model):
     Simple serializes a user object
     """
     return self.email
-
-
-# Questions:
-# Do we want the user to give a day and then we tell them the events of that day?
-# What would be the best way so that only the person with that username can accept that event request?
-# How can we organize all the events?
-# Do we still need the serialize functions if we are going to be using DockerHub, Google Cloud?
-
-# Considerations:
-# do not want the times to conflict for events
-
-# Possible Additions:
-# -Adding different calendars for a user (personal, work, etc)
-# Calendar Table
-# can have different calendars for a user
-
-
-# class Calendar(db.Model):
-#   """
-#   Calendar model
-#   """
-#   __tablename__ = "calendar"
-#   id = db.Column(db.Integer, primary_key = True, autoincrement = True)
-#   name = db.Column(db.String, nullable = False)
-#   events = db.Relationship()

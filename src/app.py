@@ -1,13 +1,10 @@
-from db import Event
-from db import User
+from db import Event, User, Asset
 from datetime import datetime
 import json
 from db import db
 from flask import Flask, request
 # from db import x, y, z
 import os
-from dotenv import load_dotenv
-load_dotenv()  # for use with environment variables
 
 
 app = Flask(__name__)
@@ -35,6 +32,24 @@ def failure_response(message, code=404):
   """
   return json.dumps({"error": message}, default=str), code
 # Note: default = str parameter is needed so that datetime objects can be serialized.
+
+
+@app.route("/upload/", methods=["POST"])
+def upload():
+  """
+  Endpoint for uploading image to AWS based on its base64 form
+  """
+  body = json.loads(request.data)
+  image_data = body.get("image_data")
+  if image_data is None:
+    return failure_response("No base64 URL")
+
+  # create new asset object
+  asset = Asset(image_data=image_data)
+  db.session.add(asset)
+  db.session.commit()
+
+  return success_response(asset.serialize(), 201)
 
 
 @app.route("/")
